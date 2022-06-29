@@ -1,14 +1,15 @@
 package tests;
 
 import io.restassured.RestAssured;
+import lombok.UserData;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 public class ReqresTest extends ReqresEndpoints {
 
@@ -18,89 +19,34 @@ public class ReqresTest extends ReqresEndpoints {
     }
 
     @Test
-    @DisplayName("Test with GET method")
+    @DisplayName("Test with Lombok")
     void checkApiEndpoint1() {
 
-        given()
-                .log().uri()
+        UserData data = given()
                 .when()
-                .get(getSingleResourseAPI)
+                .get(getSingleUser)
                 .then()
                 .log().body()
-                .statusCode(200)
-                .body("data.name", is("fuchsia rose"))
-                .body("support.url", is("https://reqres.in/#support-heading"));
+                .extract().as(UserData.class);
+
+        assertEquals(2, data.getUser().getId());
+        assertEquals("janet.weaver@reqres.in", data.getUser().getEmail());
+        assertEquals("Janet", data.getUser().getFirstName());
+        assertEquals("Weaver", data.getUser().getLastName());
     }
 
     @Test
-    @DisplayName("Test with POST method")
+    @DisplayName("Test with Groovy")
     void checkApiEndpoint2() {
-        String body = "{ \"email\": \"eve.holt@reqres.in\", \"password\": \"pistol\" }";
 
         given()
-                .log().uri()
                 .when()
-                .body(body)
-                .contentType(JSON)
-                .post(postRegisterSuccessfulAPI)
+                .get(getListUser)
                 .then()
-                .log().body()
-                .statusCode(200)
-                .body("id", is(4))
-                .body("token", is(notNullValue()));
-    }
-
-    @Test
-    @DisplayName("Test with PUT method")
-    void checkApiEndpoint3() {
-        String body = "{ \"name\": \"morpheus\", \"job\": \"zion resident\" }";
-
-        given()
-                .log().uri()
-                .when()
-                .body(body)
-                .contentType(JSON)
-                .put(putUpdateApi)
-                .then()
-                .log().body()
-                .statusCode(200)
-                .body("name", is("morpheus"))
-                .body("job", is("zion resident"))
-                .body("updatedAt", is(notNullValue()));
-
-    }
-
-    @Test
-    @DisplayName("Test with PATCH method")
-    void checkApiEndpoint4() {
-        String body = "{ \"name\": \"morpheus\", \"job\": \"zion resident\" }";
-
-        given()
-                .log().uri()
-                .when()
-                .body(body)
-                .contentType(JSON)
-                .patch(patchUpdateApi)
-                .then()
-                .log().body()
-                .statusCode(200)
-                .body("name", is("morpheus"))
-                .body("job", is("zion resident"))
-                .body("updatedAt", is(notNullValue()));
-
-    }
-
-    @Test
-    @DisplayName("Test with DELETE method")
-    void checkApiEndpoint5() {
-
-        given()
-                .log().uri()
-                .when()
-                .delete(deleteApi)
-                .then()
-                .log().body()
-                .statusCode(204);
-
+                .log().all()
+                .body("data.findAll{it.email =~/.*?@reqres.in/}.email.flatten()",
+                        hasItem("michael.lawson@reqres.in"))
+                .body("data.id.flatten()",
+                        hasItem(7));
     }
 }
